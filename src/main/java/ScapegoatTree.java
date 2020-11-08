@@ -1,17 +1,13 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Stack;
 
 public class ScapegoatTree<T extends Comparable<T>> {
     Node root;
-    int height = 0;
     List<Node<T>> list;
-    Stack<Node<T>> stack;
-    int maxSize;
     private int size = 0;
-    private double a;
-    double ha = Math.log(this.size) / Math.log(1.0 / a);
+    private double a = 0.5;
+
 
     ScapegoatTree(double alpha) {
         if (alpha < 0.5 || alpha >= 1) throw new IllegalArgumentException();
@@ -19,20 +15,13 @@ public class ScapegoatTree<T extends Comparable<T>> {
         root = null;
     }
 
-    public void add(T t) {
-        int height = addE(t).height;
-        if (height > ha) {
-            Node scapegoat = findScapegoat(find(t));
-            rebuild(scapegoat);
-        }
-    }
 
     public void rebuild(Node scape) {
         list = new ArrayList<>();
         inOrder(scape);
         if (scape.parent == null) {
             root = build(0, list.size());
-            root.parent=null;
+            root.parent = null;
         }
         if (scape.parent.right != null && scape.parent.right.value.equals(scape.value))
             scape.parent.right = build(0, list.size());
@@ -49,8 +38,17 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return list.get(i + m);
     }
 
-    public int getSize(){
+    public int getSize(Node<T> node) {
+        if (node == null) return 0;
+        else return getSize(node.left) + 1 + getSize(node.right);
+    }
 
+    public void add(T t) {
+        Node cur = addE(t);
+        Node goat = findScapegoat(cur);
+        if (goat != null) {
+            rebuild(goat);
+        }
     }
 
     public Node addE(T t) {
@@ -66,14 +64,12 @@ public class ScapegoatTree<T extends Comparable<T>> {
             assert closest.left == null;
             closest.left = newNode;
             closest.left.parent = closest;
-            closest.left.sibling = closest.right;
             size++;
             return closest.left;
         } else {
             assert closest.right == null;
             closest.right = newNode;
             closest.right.parent = closest;
-            closest.right.sibling = closest.left;
             size++;
             return closest.right;
         }
@@ -124,14 +120,8 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return current.value;
     }
 
-    public void remove(Object o) {
-        boolean del = removeE(o);
-        if (del) {
-            //     if (size > ha * maxSize) rebuild();
-        }
-    }
 
-    public boolean removeE(Object o) {
+    public boolean remove(Object o) {
         Node rem = find((T) o);
         boolean r = false;
         int comparison = rem == null ? -1 : ((T) o).compareTo((T) rem.value);
@@ -175,16 +165,18 @@ public class ScapegoatTree<T extends Comparable<T>> {
 
 
     public Node findScapegoat(Node<T> n) {
-        int size = 1;
-        int height = 0;
         while (n.parent != null) {
-            height++;
-            double totalSize = 1 + size + n.sibling.size;
-            if (height > (Math.log(totalSize) / Math.log(1.0 / a))) return n.parent;
+            if (!(getSize(n.left) < getSize(n) * a && getSize(n.right) < getSize(n) * a)) return n;
             n = n.parent;
-            size = (int) totalSize;
         }
         return null;
+    }
+
+    public boolean contains(Object o) {
+        @SuppressWarnings("unchecked")
+        T t = (T) o;
+        Node<T> closest = find(t);
+        return closest != null && t.compareTo(closest.value) == 0;
     }
 
 
@@ -193,9 +185,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
         Node<T> left = null;
         Node<T> right = null;
         Node<T> parent = null;
-        int height;
-        int size = 1;
-        Node sibling;
+
 
         Node(T value) {
             this.value = value;
