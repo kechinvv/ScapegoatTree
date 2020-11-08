@@ -6,7 +6,7 @@ import java.util.Stack;
 public class ScapegoatTree<T extends Comparable<T>> {
     Node root;
     int height = 0;
-    List<T> list;
+    List<Node<T>> list;
     Stack<Node<T>> stack;
     int maxSize;
     private int size = 0;
@@ -30,9 +30,28 @@ public class ScapegoatTree<T extends Comparable<T>> {
     public void rebuild(Node scape) {
         list = new ArrayList<>();
         inOrder(scape);
-
+        if (scape.parent == null) {
+            root = build(0, list.size());
+            root.parent=null;
+        }
+        if (scape.parent.right != null && scape.parent.right.value.equals(scape.value))
+            scape.parent.right = build(0, list.size());
+        else scape.parent.left = build(0, list.size());
     }
 
+    public Node<T> build(int i, int lsize) {
+        if (lsize == 0) return null;
+        int m = lsize / 2;
+        list.get(i + m).left = build(i, m);
+        if (list.get(i + m).left != null) list.get(i + m).left.parent = list.get(i + m);
+        list.get(i + m).right = build(i + m + 1, size - m - 1);
+        if (list.get(i + m).right != null) list.get(i + m).right.parent = list.get(i + m);
+        return list.get(i + m);
+    }
+
+    public int getSize(){
+
+    }
 
     public Node addE(T t) {
         Node<T> closest = find(t);
@@ -61,10 +80,10 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return null;
     }
 
-    public void inOrder(Node start) {
+    public void inOrder(Node<T> start) {
         if (start == null) return;
         inOrder(start.left);
-        list.add((T) start);
+        list.add(start);
         inOrder(start.right);
     }
 
@@ -108,7 +127,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
     public void remove(Object o) {
         boolean del = removeE(o);
         if (del) {
-       //     if (size > ha * maxSize) rebuild();
+            //     if (size > ha * maxSize) rebuild();
         }
     }
 
