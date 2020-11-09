@@ -25,7 +25,8 @@ public class ScapegoatTree<T extends Comparable<T>> {
         if (scape.parent == null) {
             root = build(0, list.size());
             root.parent = null;
-        } else if (scape.parent.right != null && scape.parent.right.value.equals(scape.value)) scape.parent.right = build(0, list.size());
+        } else if (scape.parent.right != null && scape.parent.right.value.equals(scape.value))
+            scape.parent.right = build(0, list.size());
         else scape.parent.left = build(0, list.size());
     }
 
@@ -140,7 +141,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
             if (r) root = rem.left;
             if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.left;
             else rem.parent.left = rem.left;
-            rem.left.parent = rem.parent;
+            if (rem.left != null) rem.left.parent = rem.parent;
             size--;
         } else if (rem.left == null) {
             if (r) root = rem.right;
@@ -188,6 +189,17 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return size;
     }
 
+
+    public boolean checkInvariant() {
+        return root == null || checkInvariant(root);
+    }
+
+    private boolean checkInvariant(Node<T> node) {
+        Node<T> left = node.left;
+        if (left != null && (left.value.compareTo(node.value) >= 0 || !checkInvariant(left))) return false;
+        Node<T> right = node.right;
+        return right == null || right.value.compareTo(node.value) > 0 && checkInvariant(right);
+    }
 
     private static class Node<T> {
         T value;
