@@ -1,9 +1,7 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
-public class ScapegoatTree<T extends Comparable<T>> {
-    Node root;
+public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T> {
+    Node<T> root;
     List<Node<T>> list;
     private int size = 0;
     private double a = 0.5;
@@ -19,7 +17,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
         root = null;
     }
 
-    public void rebuild(Node scape) {
+    public void rebuild(Node<T> scape) {
         list = new ArrayList<>();
         inOrder(scape);
         if (scape.parent == null) {
@@ -47,16 +45,18 @@ public class ScapegoatTree<T extends Comparable<T>> {
         }
     }
 
-    public void add(T t) {
-        Node cur = addE(t);
-        if (cur == null) return;
-        Node goat = findScapegoat(cur);
+    @Override
+    public boolean add(T t) {
+        Node<T> cur = addE((T) t);
+        if (cur == null) return false;
+        Node<T> goat = findScapegoat(cur);
         if (goat != null) {
             rebuild(goat);
         }
+        return true;
     }
 
-    public Node addE(T t) {
+    public Node<T> addE(T t) {
         Node<T> closest = find(t);
         int comparison = closest == null ? -1 : t.compareTo(closest.value);
         if (comparison == 0) {
@@ -107,6 +107,77 @@ public class ScapegoatTree<T extends Comparable<T>> {
         }
     }
 
+    @Override
+    public Comparator comparator() {
+        return null;
+    }
+
+    @Override
+    public SortedSet<T> subSet(T fromElement, T toElement) {
+        if (fromElement == null || toElement == null) throw new NullPointerException();
+        TreeSet<T> set = new TreeSet<T>() {
+            ScapegoatTree<T> b = ScapegoatTree.this;
+
+            @Override
+            public boolean add(T t) {
+                if (fromElement.compareTo(t) > 0 || toElement.compareTo(t) <= 0) throw new IllegalArgumentException();
+                b.add(t);
+                return super.add(t);
+            }
+
+            @Override
+            public boolean remove(Object o) {
+                if (fromElement.compareTo((T) o) > 0 || toElement.compareTo((T) o) <= 0)
+                    throw new IllegalArgumentException();
+                b.remove(o);
+                return super.remove(o);
+            }
+
+            @Override
+            public Iterator<T> iterator() {
+                b.adder(root, this, fromElement, toElement);
+                return super.iterator();
+            }
+
+            @Override
+            public boolean contains(Object o) {
+                b.adder(root, this, fromElement, toElement);
+                return super.contains(o);
+            }
+
+            @Override
+            public int size() {
+                b.adder(root, this, fromElement, toElement);
+                return super.size();
+            }
+        };
+        if (fromElement.compareTo(toElement) == 0) return set;
+        this.adder(root, set, fromElement, toElement);
+        return set;
+    }
+
+    @Override
+    public SortedSet<T> headSet(T toElement) {
+        return this.subSet(first(), toElement);
+    }
+
+    @Override
+    public SortedSet<T> tailSet(T fromElement) {
+        return this.subSet(fromElement, last());
+    }
+
+    void adder(Node<T> n, TreeSet<T> set, T fromElement, T toElement) {
+        if (n != null && ((T) n.value).compareTo(fromElement) >= 0 && ((T) n.value).compareTo(toElement) < 0) {
+            set.add((T) n.value);
+            this.adder(n.left, set, fromElement, toElement);
+            this.adder(n.right, set, fromElement, toElement);
+        } else if (n != null && ((T) n.value).compareTo(fromElement) < 0)
+            this.adder(n.right, set, fromElement, toElement);
+        else if (n != null && ((T) n.value).compareTo(toElement) >= 0) this.adder(n.left, set, fromElement, toElement);
+    }
+
+
+    @Override
     public T first() {
         if (root == null) throw new NoSuchElementException();
         Node<T> current = root;
@@ -116,7 +187,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return current.value;
     }
 
-
+    @Override
     public T last() {
         if (root == null) throw new NoSuchElementException();
         Node<T> current = root;
@@ -126,9 +197,9 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return current.value;
     }
 
-
+    @Override
     public boolean remove(Object o) {
-        Node rem = find((T) o);
+        Node<T> rem = find((T) o);
         boolean r = false;
         int comparison = rem == null ? -1 : ((T) o).compareTo((T) rem.value);
         if (comparison != 0) {
@@ -169,6 +240,31 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return true;
     }
 
+    @Override
+    public boolean addAll(Collection c) {
+        return false;
+    }
+
+    @Override
+    public void clear() {
+
+    }
+
+    @Override
+    public boolean removeAll(Collection c) {
+        return false;
+    }
+
+    @Override
+    public boolean retainAll(Collection c) {
+        return false;
+    }
+
+    @Override
+    public boolean containsAll(Collection c) {
+        return false;
+    }
+
 
     public Node findScapegoat(Node<T> n) {
         while (n.parent != null) {
@@ -178,6 +274,7 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return null;
     }
 
+    @Override
     public boolean contains(Object o) {
         @SuppressWarnings("unchecked")
         T t = (T) o;
@@ -185,10 +282,31 @@ public class ScapegoatTree<T extends Comparable<T>> {
         return closest != null && t.compareTo(closest.value) == 0;
     }
 
+    @Override
+    public Iterator iterator() {
+        return new ScapegoatTreeIterator();
+    }
+
+    @Override
+    public Object[] toArray() {
+        return new Object[0];
+    }
+
+
+    @Override
+    public Object[] toArray(Object[] a) {
+        return new Object[0];
+    }
+
+    @Override
     public int size() {
         return size;
     }
 
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
 
     public boolean checkInvariant() {
         return root == null || checkInvariant(root);
@@ -209,6 +327,77 @@ public class ScapegoatTree<T extends Comparable<T>> {
 
         Node(T value) {
             this.value = value;
+        }
+    }
+
+    public class ScapegoatTreeIterator implements Iterator<T> {
+        ArrayDeque<Node<T>> deq = new ArrayDeque<>();
+        T cur = null;
+
+        private ScapegoatTreeIterator() {
+            if (root != null) fillStack(root);
+        }
+
+        public void fillStack(Node<T> cur) {
+            if (cur.left != null) fillStack(cur.left);
+            deq.push(cur);
+            if (cur.right != null) fillStack(cur.right);
+        }
+
+        /**
+         * Проверка наличия следующего элемента
+         * <p>
+         * Функция возвращает true, если итерация по множеству ещё не окончена (то есть, если вызов next() вернёт
+         * следующий элемент множества, а не бросит исключение); иначе возвращает false.
+         * <p>
+         * Спецификация: {@link Iterator#hasNext()} (Ctrl+Click по hasNext)
+         * <p>
+         * Средняя
+         */
+        @Override
+        public boolean hasNext() {
+            return !deq.isEmpty();
+        }
+
+        /**
+         * Получение следующего элемента
+         * <p>
+         * Функция возвращает следующий элемент множества.
+         * Так как BinarySearchTree реализует интерфейс SortedSet, последовательные
+         * вызовы next() должны возвращать элементы в порядке возрастания.
+         * <p>
+         * Бросает NoSuchElementException, если все элементы уже были возвращены.
+         * <p>
+         * Спецификация: {@link Iterator#next()} (Ctrl+Click по next)
+         * <p>
+         * Средняя
+         */
+
+
+        @Override
+        public T next() {
+            cur = deq.removeLast().value;
+            return cur;
+        }
+
+        /**
+         * Удаление предыдущего элемента
+         * <p>
+         * Функция удаляет из множества элемент, возвращённый крайним вызовом функции next().
+         * <p>
+         * Бросает IllegalStateException, если функция была вызвана до первого вызова next() или же была вызвана
+         * более одного раза после любого вызова next().
+         * <p>
+         * Спецификация: {@link Iterator#remove()} (Ctrl+Click по remove)
+         * <p>
+         * Сложная
+         */
+        @Override
+        public void remove() {
+            if (cur != null) {
+                ScapegoatTree.this.remove(cur);
+                cur = null;
+            } else throw new IllegalStateException();
         }
     }
 }
