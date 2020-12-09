@@ -210,22 +210,26 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         }
         if (rem.right == null) {
             if (r) root = rem.left;
-            if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.left;
+            else if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.left;
             else rem.parent.left = rem.left;
             if (rem.left != null) rem.left.parent = rem.parent;
-            size--;
         } else if (rem.left == null) {
-            if (r) root = rem.right;
-            if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.right;
+            if (r) {
+                root = rem.right;
+                root.parent = null;
+            } else if (rem.parent.right != null && rem.parent.right.value.equals(rem.value))
+                rem.parent.right = rem.right;
             else rem.parent.left = rem.right;
             rem.right.parent = rem.parent;
-            size--;
         } else {
             if (rem.right.left == null) {
                 rem.value = rem.right.value;
                 rem.right = rem.right.right;
-                if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.right;
-                else rem.parent.left = rem.right;
+                if (!r) {
+                    if (rem.parent.right != null && rem.parent.right.value.equals(rem.value))
+                        rem.parent.right = rem.right;
+                    else rem.parent.left = rem.right;
+                }
                 rem.right.parent = rem.parent;
             } else {
                 Node<T> cur = rem.right;
@@ -237,32 +241,8 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
                 cur.left = null;
             }
         }
+        size--;
         return true;
-    }
-
-    @Override
-    public boolean addAll(Collection c) {
-        return false;
-    }
-
-    @Override
-    public void clear() {
-
-    }
-
-    @Override
-    public boolean removeAll(Collection c) {
-        return false;
-    }
-
-    @Override
-    public boolean retainAll(Collection c) {
-        return false;
-    }
-
-    @Override
-    public boolean containsAll(Collection c) {
-        return false;
     }
 
 
@@ -287,16 +267,6 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return new ScapegoatTreeIterator();
     }
 
-    @Override
-    public Object[] toArray() {
-        return new Object[0];
-    }
-
-
-    @Override
-    public Object[] toArray(Object[] a) {
-        return new Object[0];
-    }
 
     @Override
     public int size() {
@@ -319,7 +289,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return right == null || right.value.compareTo(node.value) > 0 && checkInvariant(right);
     }
 
-    private static class Node<T> {
+    public static class Node<T> {
         T value;
         Node<T> left = null;
         Node<T> right = null;
@@ -332,16 +302,17 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
     public class ScapegoatTreeIterator implements Iterator<T> {
         ArrayDeque<Node<T>> deq = new ArrayDeque<>();
-        T cur = null;
+        Node<T> cur = null;
 
         private ScapegoatTreeIterator() {
             if (root != null) fillStack(root);
         }
 
         public void fillStack(Node<T> cur) {
-            if (cur.left != null) fillStack(cur.left);
-            deq.push(cur);
-            if (cur.right != null) fillStack(cur.right);
+            while (cur != null) {
+                deq.push(cur);
+                cur = cur.left;
+            }
         }
 
         /**
@@ -376,8 +347,9 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
         @Override
         public T next() {
-            cur = deq.removeLast().value;
-            return cur;
+            cur = deq.pop();
+            if (cur.right != null) fillStack(cur.right);
+            return cur.value;
         }
 
         /**

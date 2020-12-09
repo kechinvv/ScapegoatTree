@@ -1,59 +1,58 @@
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Random;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static io.qala.datagen.RandomValue.between;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 public class TreeTests {
-    public int createRandomInt(int mn, int mx) {
-        int min = mn;
-        int max = mx;
-        Random random = new Random();
-        int n = random.nextInt(max - min + 1);
-        return n + min;
-    }
+    ScapegoatTree<Integer> tree;
+    Set<Integer> set;
 
-    public ScapegoatTree create(int size) {
-        ScapegoatTree<Integer> tree = new ScapegoatTree<Integer>();
-        int min = -5;
-        int max = 101;
-        Random random = new Random();
-        int a = random.nextInt(max - min + 1);
-        for (int i = 0; i < size; i++) {
-
-            while (tree.contains(a)) {
-                a = random.nextInt(max - min + 1);
-                a += min;
-            }
-            tree.add(a);
+    @Before
+    public void create() {
+        set = new HashSet();
+        for (int i = 0; i < 30; i++) {
+            set.add(between(0, 100).integer());
         }
-        return tree;
+        tree = new ScapegoatTree<>();
+        Iterator<Integer> iterator = set.iterator();
+
+        for (int i = 0; i < set.size(); i++) {
+            tree.add(iterator.next());
+        }
+
     }
 
     @Test
-    public void createTest() {
-        int size = createRandomInt(11, 51);
-        ScapegoatTree tree = create(size);
-        Assert.assertNotNull(tree);
-        Assert.assertEquals(size, tree.size());
+    public void size() {
+        Assert.assertTrue(set.size() == tree.size());
     }
 
     @Test
-    public void remANDadd() {
-        int size = createRandomInt(11, 51);
-        ScapegoatTree tree = create(size);
-        Assert.assertNotNull(tree);
-        Assert.assertEquals(size, tree.size());
-        int rnd = createRandomInt(-100, 100);
-        tree.add(rnd);
-        Assert.assertTrue(tree.checkInvariant());
-        Assert.assertTrue(tree.contains(rnd));
-        tree.remove(rnd);
-        rnd = createRandomInt(-100, 100);
-        tree.add(rnd);
-        Assert.assertTrue(tree.checkInvariant());
-        Assert.assertTrue(tree.contains(rnd));
-        tree.remove(rnd);
-        Assert.assertFalse(tree.contains(rnd));
-        Assert.assertFalse(tree.remove(rnd));
+    public void remove() {
+        Integer rem = set.iterator().next();
+        Assert.assertTrue(tree.remove(rem));
+        set.remove(rem);
+        Assert.assertFalse("Tree contain removed element",tree.contains(rem));
+        Assert.assertFalse("Element must be already removed",tree.remove(rem));
+        Assert.assertTrue(set.size()==tree.size());
+        set.remove(tree.root.value);
+        Assert.assertTrue(tree.remove(tree.root.value));
+        Assert.assertTrue(set.size()==tree.size());
+    }
+
+    @Test
+    public void iterator(){
+        tree=new ScapegoatTree<>();
+        Assert.assertFalse(tree.iterator().hasNext());
+        Throwable thrown = catchThrowable(() -> { tree.iterator().next(); });
+        assertThat(thrown);
     }
 }
