@@ -18,7 +18,7 @@ public class TreeTests {
     @Before
     public void create() {
         set = new HashSet();
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 20; i++) {
             set.add(between(0, 100).integer());
         }
         tree = new ScapegoatTree<>();
@@ -34,10 +34,14 @@ public class TreeTests {
     public void size() {
         Assert.assertTrue(set.size() == tree.size());
     }
+    @Test
+    public void order() {
+        Assert.assertTrue(tree.checkInvariant());
+    }
 
     @Test
     public void remove() {
-        Integer rem = set.iterator().next();
+      /*  Integer rem = set.iterator().next();
         Assert.assertTrue(tree.remove(rem));
         set.remove(rem);
         Assert.assertFalse("Tree contain removed element",tree.contains(rem));
@@ -45,7 +49,14 @@ public class TreeTests {
         Assert.assertTrue(set.size()==tree.size());
         set.remove(tree.root.value);
         Assert.assertTrue(tree.remove(tree.root.value));
-        Assert.assertTrue(set.size()==tree.size());
+        Assert.assertEquals(set.size(), tree.size()); */
+        System.out.println(set);
+        Iterator iterator = set.iterator();
+        while (iterator.hasNext()){
+            Assert.assertTrue(tree.remove(iterator.next()));
+            iterator.remove();
+        }
+        Assert.assertTrue(tree.isEmpty());
     }
 
     @Test
