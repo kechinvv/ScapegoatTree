@@ -6,6 +6,10 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
     private int size = 0;
     private double a = 0.5;
 
+    ScapegoatTree() {
+        root = null;
+    }
+
 
     ScapegoatTree(double alpha) {
         if (alpha < 0.5 || alpha >= 1) throw new IllegalArgumentException();
@@ -13,36 +17,53 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         root = null;
     }
 
-    ScapegoatTree() {
-        root = null;
-    }
-
-    public void rebuild(Node<T> scape) {
+    public void rebuild(Node<T> scape) throws CloneNotSupportedException {
         list = new ArrayList<>();
         inOrder(scape);
         if (scape.parent == null) {
             root = build(0, list.size());
             root.parent = null;
-        } else if (scape.parent.right != null && scape.parent.right.value.equals(scape.value))
-            scape.parent.right = build(0, list.size());
-        else scape.parent.left = build(0, list.size());
+        } else {
+            if (scape.parent.right != null && scape.parent.right.value.equals(scape.value)) {
+                scape.parent.right = build(0, list.size());
+                scape.parent.right.parent = scape.parent;
+            } else {
+                scape.parent.left = build(0, list.size());
+                scape.parent.left.parent = scape.parent;
+            }
+
+        }
     }
 
     public Node<T> build(int i, int lsize) {
         if (lsize == 0) return null;
         int m = lsize / 2;
         list.get(i + m).left = build(i, m);
-        if (list.get(i + m).left != null) list.get(i + m).left.parent = list.get(i + m);
+        if (list.get(i + m).left != null) {
+            list.get(i + m).left.parent = list.get(i + m);
+        }
         list.get(i + m).right = build(i + m + 1, lsize - m - 1);
-        if (list.get(i + m).right != null) list.get(i + m).right.parent = list.get(i + m);
+        if (list.get(i + m).right != null) {
+            list.get(i + m).right.parent = list.get(i + m);
+        }
+
         return list.get(i + m);
+    }
+
+    public Node<T> findScapegoat(Node<T> n) {
+        Node s = null;
+        if (n == null) return null;
+        while (n != null) {
+            if (getSize(n.left) > getSize(n) * a || getSize(n.right) > getSize(n) * a) s = n;
+            n = n.parent;
+
+        }
+        return s;
     }
 
     public int getSize(Node<T> node) {
         if (node == null) return 0;
-        else {
-            return (getSize(node.left) + 1 + getSize(node.right));
-        }
+        return 1 + getSize(node.left) + getSize(node.right);
     }
 
     @Override
@@ -50,8 +71,13 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         Node<T> cur = addE((T) t);
         if (cur == null) return false;
         Node<T> goat = findScapegoat(cur);
+
         if (goat != null) {
-            rebuild(goat);
+            try {
+                rebuild(goat);
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
         }
         return true;
     }
@@ -82,6 +108,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         }
     }
 
+
     public void inOrder(Node<T> start) {
         if (start == null) return;
         inOrder(start.left);
@@ -89,7 +116,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         inOrder(start.right);
     }
 
-    private Node<T> find(T value) {
+    Node<T> find(T value) {
         if (root == null) return null;
         return find(root, value);
     }
@@ -187,6 +214,15 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return current.value;
     }
 
+    public Node firstN() {
+        if (root == null) throw new NoSuchElementException();
+        Node<T> current = root;
+        while (current.left != null) {
+            current = current.left;
+        }
+        return current;
+    }
+
     @Override
     public T last() {
         if (root == null) throw new NoSuchElementException();
@@ -199,59 +235,72 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
     @Override
     public boolean remove(Object o) {
-        Node<T> rem = find((T) o);
-        boolean r = false;
-        int comparison = rem == null ? -1 : ((T) o).compareTo((T) rem.value);
-        if (comparison != 0) {
-            return false;
-        }
-        if (rem.value.equals(root.value)) {
-            r = true;
-        }
-        if (rem.right == null) {
-            if (r) root = rem.left;
-            else if (rem.parent.right != null && rem.parent.right.value.equals(rem.value)) rem.parent.right = rem.left;
-            else rem.parent.left = rem.left;
-            if (rem.left != null) rem.left.parent = rem.parent;
-        } else if (rem.left == null) {
-            if (r) {
-                root = rem.right;
-                root.parent = null;
-            } else if (rem.parent.right != null && rem.parent.right.value.equals(rem.value))
-                rem.parent.right = rem.right;
-            else rem.parent.left = rem.right;
-            rem.right.parent = rem.parent;
-        } else {
-            if (rem.right.left == null) {
-                rem.value = rem.right.value;
-                rem.right = rem.right.right;
-                if (!r) {
-                    if (rem.parent.right != null && rem.parent.right.value.equals(rem.value))
-                        rem.parent.right = rem.right;
-                    else rem.parent.left = rem.right;
+        Node<T> del = this.find((T) o);
+        if (del == null || del.value.compareTo((T) o) != 0) return false;
+        Node<T> pr = del.parent;
+        if (del.left == null && del.right == null) {
+            if (del.value.equals(root.value)) root = null;
+            else if (pr.left == del) pr.left = null;
+            else pr.right = null;
+        } else if (del.left == null || del.right == null) {
+            if (del.left == null) {
+                if (del.value.equals(root.value)) {
+                    root = del.right;
+                    if (root.right != null) root.right.parent = root;
+                } else if (pr.left == del) {
+                    pr.left = del.right;
+                    pr.left.parent = del.parent;
+                } else {
+                    pr.right = del.right;
+                    pr.right.parent = del.parent;
                 }
-                rem.right.parent = rem.parent;
             } else {
-                Node<T> cur = rem.right;
-                while (true) {
-                    if (cur.left.left == null) break;
-                    else cur = cur.left;
+                if (del.value.equals(root.value)) {
+                    root = del.left;
+                    if (root.left != null) root.left.parent = root;
+                } else if (pr.left == del) {
+                    pr.left = del.left;
+                    pr.left.parent = del.parent;
+                } else {
+                    pr.right = del.left;
+                    pr.right.parent = del.parent;
                 }
-                rem.value = cur.left.value;
-                cur.left = null;
+            }
+        } else {
+            Node<T> cur = this.next(del);
+
+            del.value = cur.value;
+            if (cur.parent.left == cur) {
+                cur.parent.left = cur.right;
+                if (cur.right != null) cur.right.parent = cur.parent;
+            } else {
+                cur.parent.right = cur.left;
+                if (cur.left != null) cur.right.parent = cur.parent;
             }
         }
         size--;
+        try {
+            if (root != null)
+                this.rebuild(root);
+        } catch (CloneNotSupportedException e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
-
-    public Node findScapegoat(Node<T> n) {
-        while (n.parent != null) {
-            if (getSize(n.left) > getSize(n) * a || getSize(n.right) > getSize(n) * a) return n;
-            n = n.parent;
+    public Node<T> next(Node<T> node) {
+        if (node.right != null) return minimum(node.right);
+        Node y = node.parent;
+        while (y != null && node == y.right) {
+            node = y;
+            y = y.parent;
         }
-        return null;
+        return y;
+    }
+
+    public Node<T> minimum(Node min) {
+        if (min.left == null) return min;
+        return minimum(min.left);
     }
 
     @Override
@@ -275,7 +324,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
     @Override
     public boolean isEmpty() {
-        return false;
+        return root == null;
     }
 
     public boolean checkInvariant() {
@@ -289,14 +338,34 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return right == null || right.value.compareTo(node.value) > 0 && checkInvariant(right);
     }
 
-    public static class Node<T> {
-        T value;
+    public static class Node<T> implements Cloneable {
         Node<T> left = null;
         Node<T> right = null;
         Node<T> parent = null;
+        T value;
 
         Node(T value) {
             this.value = value;
+        }
+
+        public Node<T> clone() throws CloneNotSupportedException {
+            Node<T> clone = (Node<T>) super.clone();
+            return clone;
+        }
+
+        public String toString() {
+            String v;
+            String p;
+            String l;
+            String r;
+            if (left == null) l = "null";
+            else l = left.value.toString();
+            if (right == null) r = "null";
+            else r = right.value.toString();
+            if (parent == null) p = "null";
+            else p = parent.value.toString();
+            v = value.toString();
+            return "Value " + v + " left " + l + " right " + r + " par " + p;
         }
     }
 
@@ -305,7 +374,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         Node<T> cur = null;
 
         private ScapegoatTreeIterator() {
-            if (root != null) fillStack(root);
+            fillStack(root);
         }
 
         public void fillStack(Node<T> cur) {
