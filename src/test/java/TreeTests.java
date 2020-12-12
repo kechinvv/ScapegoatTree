@@ -25,18 +25,12 @@ public class TreeTests {
         }
         tree = new ScapegoatTree<>();
         Iterator<Integer> iterator = set.iterator();
-        System.out.println(set);
         while (iterator.hasNext()) {
             Integer a = iterator.next();
             Assert.assertTrue(tree.add(a));
-            System.out.println(tree.find(a));
             Assert.assertTrue(tree.contains(a));
         }
-        Iterator<Integer> treeit = tree.iterator();
-        for (int i = 0; i < tree.size(); i++) {
-            Integer j = treeit.next();
-            System.out.println(tree.find(j));
-        }
+
     }
 
     @Test
@@ -55,9 +49,16 @@ public class TreeTests {
     }
     @Test
     public void subSet(){
-        Set sub = tree.subSet(tree.first(),tree.last());
+        SortedSet<Integer> sub = tree.subSet(tree.first(),tree.last());
         Assert.assertEquals(sub.size(), tree.size()-1);
-
+        tree.add(tree.first()+1);
+        Assert.assertTrue(sub.contains(tree.first()+1));
+        tree.remove(tree.first()+1);
+        Assert.assertFalse(sub.contains(tree.first()+1));
+        sub.add(tree.first()+2);
+        Assert.assertTrue(tree.contains(tree.first()+2));
+        sub.remove(tree.first()+2);
+        Assert.assertFalse(tree.contains(tree.first()+2));
     }
 
     @Test
@@ -68,7 +69,6 @@ public class TreeTests {
         Assert.assertTrue(tree.isEmpty());
         this.create();
         for (Integer e: forR) {
-            System.out.println(e);
             Assert.assertTrue(tree.remove(e));
         }
         Assert.assertEquals(tree.size(), set.size() - forR.size());
@@ -83,5 +83,31 @@ public class TreeTests {
             tree.iterator().next();
         });
         assertThat(thrown);
+        create();
+        Iterator it = tree.iterator();
+        Integer i = (Integer) it.next();
+        it.remove();
+        Assert.assertFalse(tree.contains(i));
+    }
+
+    @Test
+    public void treeAlpha(){
+        set = new HashSet<Integer>();
+        forR=new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            Integer rand = between(0, 100).integer();
+            if (between(0,2).integer()==0 && !set.contains(rand)) forR.add(rand);
+            set.add(rand);
+
+        }
+        tree=new ScapegoatTree<>(0.9);
+        Iterator<Integer> iterator = set.iterator();
+        while (iterator.hasNext()) {
+            Integer a = iterator.next();
+            Assert.assertTrue(tree.add(a));
+            Assert.assertTrue(tree.contains(a));
+        }
+        Assert.assertTrue(tree.getSize(tree.root.left)<=tree.size()*0.9 && tree.getSize(tree.root.left)<=tree.size()*0.9);
+        Assert.assertFalse(tree.getSize(tree.root.left)>tree.size()*0.9 || tree.getSize(tree.root.left)>tree.size()*0.9);
     }
 }

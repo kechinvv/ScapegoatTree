@@ -12,7 +12,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
 
     ScapegoatTree(double alpha) {
-        if (alpha < 0.5 || alpha >= 1) throw new IllegalArgumentException();
+        if (alpha < 0.5 || alpha >=1) throw new IllegalArgumentException();
         a = alpha;
         root = null;
     }
@@ -162,18 +162,21 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
             @Override
             public Iterator<T> iterator() {
+                this.clear();
                 b.adder(root, this, fromElement, toElement);
                 return super.iterator();
             }
 
             @Override
             public boolean contains(Object o) {
+                this.clear();
                 b.adder(root, this, fromElement, toElement);
                 return super.contains(o);
             }
 
             @Override
             public int size() {
+                this.clear();
                 b.adder(root, this, fromElement, toElement);
                 return super.size();
             }
@@ -214,14 +217,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return current.value;
     }
 
-    public Node firstN() {
-        if (root == null) throw new NoSuchElementException();
-        Node<T> current = root;
-        while (current.left != null) {
-            current = current.left;
-        }
-        return current;
-    }
+
 
     @Override
     public T last() {
@@ -338,7 +334,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return right == null || right.value.compareTo(node.value) > 0 && checkInvariant(right);
     }
 
-    public static class Node<T> implements Cloneable {
+    public static class Node<T> {
         Node<T> left = null;
         Node<T> right = null;
         Node<T> parent = null;
@@ -348,10 +344,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
             this.value = value;
         }
 
-        public Node<T> clone() throws CloneNotSupportedException {
-            Node<T> clone = (Node<T>) super.clone();
-            return clone;
-        }
+
 
         public String toString() {
             String v;
@@ -436,7 +429,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         @Override
         public void remove() {
             if (cur != null) {
-                ScapegoatTree.this.remove(cur);
+                ScapegoatTree.this.remove(cur.value);
                 cur = null;
             } else throw new IllegalStateException();
         }
