@@ -1,4 +1,7 @@
+package tree;
+
 import java.util.*;
+
 
 public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T> {
     Node<T> root;
@@ -6,12 +9,12 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
     private int size = 0;
     private double a = 0.5;
 
-    ScapegoatTree() {
+    public ScapegoatTree() {
         root = null;
     }
 
 
-    ScapegoatTree(double alpha) {
+    public ScapegoatTree(double alpha) {
         if (alpha < 0.5 || alpha >=1) throw new IllegalArgumentException();
         a = alpha;
         root = null;
