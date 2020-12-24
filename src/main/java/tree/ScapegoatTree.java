@@ -5,7 +5,7 @@ import java.util.*;
 
 public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T> {
     Node<T> root;
-    List<Node<T>> list;
+    private List<Node<T>> list;
     private int size = 0;
     private double a = 0.5;
 
@@ -15,12 +15,12 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
 
     public ScapegoatTree(double alpha) {
-        if (alpha < 0.5 || alpha >=1) throw new IllegalArgumentException();
+        if (alpha < 0.5 || alpha >= 1) throw new IllegalArgumentException();
         a = alpha;
         root = null;
     }
 
-    public void rebuild(Node<T> scape) throws CloneNotSupportedException {
+    public void rebuild(Node<T> scape) {
         list = new ArrayList<>();
         inOrder(scape);
         if (scape.parent == null) {
@@ -76,16 +76,14 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         Node<T> goat = findScapegoat(cur);
 
         if (goat != null) {
-            try {
-                rebuild(goat);
-            } catch (CloneNotSupportedException e) {
-                e.printStackTrace();
-            }
+
+            rebuild(goat);
+
         }
         return true;
     }
 
-    public Node<T> addE(T t) {
+    private Node<T> addE(T t) {
         Node<T> closest = find(t);
         int comparison = closest == null ? -1 : t.compareTo(closest.value);
         if (comparison == 0) {
@@ -119,7 +117,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         inOrder(start.right);
     }
 
-    Node<T> find(T value) {
+    private Node<T> find(T value) {
         if (root == null) return null;
         return find(root, value);
     }
@@ -221,7 +219,6 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
     }
 
 
-
     @Override
     public T last() {
         if (root == null) throw new NoSuchElementException();
@@ -278,12 +275,8 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
             }
         }
         size--;
-        try {
-            if (root != null)
-                this.rebuild(root);
-        } catch (CloneNotSupportedException e) {
-            e.printStackTrace();
-        }
+        if (root != null)
+            this.rebuild(root);
         return true;
     }
 
@@ -346,7 +339,6 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         Node(T value) {
             this.value = value;
         }
-
 
 
         public String toString() {
