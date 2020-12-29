@@ -5,7 +5,6 @@ import java.util.*;
 
 public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> implements SortedSet<T> {
     Node<T> root;
-    private List<Node<T>> list;
     private int size = 0;
     private double a = 0.5;
 
@@ -15,37 +14,37 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
 
     public ScapegoatTree(double alpha) {
-        if (alpha < 0.5 || alpha >= 1) throw new IllegalArgumentException();
+        if (alpha < 0.5 || alpha > 1) throw new IllegalArgumentException();
         a = alpha;
         root = null;
     }
 
     public void rebuild(Node<T> scape) {
-        list = new ArrayList<>();
-        inOrder(scape);
+        ArrayList<Node<T>> list = new ArrayList<>();
+        inOrder(scape, list);
         if (scape.parent == null) {
-            root = build(0, list.size());
+            root = build(0, list.size(), list);
             root.parent = null;
         } else {
             if (scape.parent.right != null && scape.parent.right.value.equals(scape.value)) {
-                scape.parent.right = build(0, list.size());
+                scape.parent.right = build(0, list.size(), list);
                 scape.parent.right.parent = scape.parent;
             } else {
-                scape.parent.left = build(0, list.size());
+                scape.parent.left = build(0, list.size(), list);
                 scape.parent.left.parent = scape.parent;
             }
 
         }
     }
 
-    public Node<T> build(int i, int lsize) {
+    public Node<T> build(int i, int lsize, ArrayList<Node<T>> list) {
         if (lsize == 0) return null;
         int m = lsize / 2;
-        list.get(i + m).left = build(i, m);
+        list.get(i + m).left = build(i, m, list);
         if (list.get(i + m).left != null) {
             list.get(i + m).left.parent = list.get(i + m);
         }
-        list.get(i + m).right = build(i + m + 1, lsize - m - 1);
+        list.get(i + m).right = build(i + m + 1, lsize - m - 1, list);
         if (list.get(i + m).right != null) {
             list.get(i + m).right.parent = list.get(i + m);
         }
@@ -71,7 +70,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
     @Override
     public boolean add(T t) {
-        Node<T> cur = addE((T) t);
+        Node<T> cur = addOnly((T) t);
         if (cur == null) return false;
         Node<T> goat = findScapegoat(cur);
 
@@ -83,7 +82,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
         return true;
     }
 
-    private Node<T> addE(T t) {
+    private Node<T> addOnly(T t) {
         Node<T> closest = find(t);
         int comparison = closest == null ? -1 : t.compareTo(closest.value);
         if (comparison == 0) {
@@ -110,11 +109,11 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
     }
 
 
-    public void inOrder(Node<T> start) {
+    public void inOrder(Node<T> start, ArrayList<Node<T>> list) {
         if (start == null) return;
-        inOrder(start.left);
+        inOrder(start.left, list);
         list.add(new Node<T>(start.value));
-        inOrder(start.right);
+        inOrder(start.right, list);
     }
 
     private Node<T> find(T value) {
@@ -170,6 +169,8 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
             @Override
             public boolean contains(Object o) {
+                if (fromElement.compareTo((T) o) > 0 || toElement.compareTo((T) o) <= 0)
+                    return false;
                 this.clear();
                 b.adder(root, this, fromElement, toElement);
                 return super.contains(o);
@@ -358,7 +359,7 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
     }
 
     public class ScapegoatTreeIterator implements Iterator<T> {
-        ArrayDeque<Node<T>> deq = new ArrayDeque<>();
+        ArrayDeque<Node<T>> path = new ArrayDeque<>();
         Node<T> cur = null;
 
         private ScapegoatTreeIterator() {
@@ -367,60 +368,26 @@ public class ScapegoatTree<T extends Comparable<T>> extends AbstractSet<T> imple
 
         public void fillStack(Node<T> cur) {
             while (cur != null) {
-                deq.push(cur);
+                path.push(cur);
                 cur = cur.left;
             }
         }
 
-        /**
-         * Проверка наличия следующего элемента
-         * <p>
-         * Функция возвращает true, если итерация по множеству ещё не окончена (то есть, если вызов next() вернёт
-         * следующий элемент множества, а не бросит исключение); иначе возвращает false.
-         * <p>
-         * Спецификация: {@link Iterator#hasNext()} (Ctrl+Click по hasNext)
-         * <p>
-         * Средняя
-         */
+
         @Override
         public boolean hasNext() {
-            return !deq.isEmpty();
+            return !path.isEmpty();
         }
-
-        /**
-         * Получение следующего элемента
-         * <p>
-         * Функция возвращает следующий элемент множества.
-         * Так как BinarySearchTree реализует интерфейс SortedSet, последовательные
-         * вызовы next() должны возвращать элементы в порядке возрастания.
-         * <p>
-         * Бросает NoSuchElementException, если все элементы уже были возвращены.
-         * <p>
-         * Спецификация: {@link Iterator#next()} (Ctrl+Click по next)
-         * <p>
-         * Средняя
-         */
 
 
         @Override
         public T next() {
-            cur = deq.pop();
+            cur = path.pop();
             if (cur.right != null) fillStack(cur.right);
             return cur.value;
         }
 
-        /**
-         * Удаление предыдущего элемента
-         * <p>
-         * Функция удаляет из множества элемент, возвращённый крайним вызовом функции next().
-         * <p>
-         * Бросает IllegalStateException, если функция была вызвана до первого вызова next() или же была вызвана
-         * более одного раза после любого вызова next().
-         * <p>
-         * Спецификация: {@link Iterator#remove()} (Ctrl+Click по remove)
-         * <p>
-         * Сложная
-         */
+
         @Override
         public void remove() {
             if (cur != null) {

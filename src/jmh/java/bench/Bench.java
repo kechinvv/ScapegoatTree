@@ -1,13 +1,12 @@
 package bench;
 
+import org.junit.Before;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 import tree.ScapegoatTree;
+import treeBinary.BinarySearchTree;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static io.qala.datagen.RandomValue.between;
@@ -16,41 +15,74 @@ import static io.qala.datagen.RandomValue.between;
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Fork(value = 2, jvmArgs = {"-Xms2G", "-Xmx2G"})
+@Fork(value = 0, jvmArgs = {"-Xms2G", "-Xmx2G"}) //2
 public class Bench {
 
 
-    @Param({"0", "100000", "200000", "300000", "400000", "500000",
-            "600000", "700000", "800000"})
+    @Param({"0", "100000", "200000", "300000", "400000"})
     public int listSize;
     public ScapegoatTree<Integer> tree = new ScapegoatTree<>();
     public ScapegoatTree<Integer> treeA = new ScapegoatTree<>(0.9);
+    public BinarySearchTree<Integer> treeB = new BinarySearchTree<>();
 
-    /*
-   public static void main(String[] args) throws RunnerException {
-        Options opt = new OptionsBuilder()
-                .include(Bench.class.getSimpleName())
-                .forks(1)
-                .build();
+    ArrayList<Integer> list = new ArrayList<>();
 
-        new Runner(opt).run();
+    @Setup
+    public void SetList() {
+        for (int i = 0; i < listSize; i++) list.add(between(-30000, 30000).integer());
     }
 
-*/
 
     @Benchmark
-    public void setUpJ(Blackhole black) {
+    public void setUp5(Blackhole black) {
         for (int i = 0; i < listSize; i++) {
-            tree.add(between(-30000, 30000).integer());
+            // tree.add(between(-30000, 30000).integer());
+            tree.add(list.get(i));
         }
         black.consume(tree);
     }
 
     @Benchmark
-    public void setUpA(Blackhole black) {
+    public void setUpBinary(Blackhole black) {
         for (int i = 0; i < listSize; i++) {
-            treeA.add(between(-30000, 30000).integer());
+            // tree.add(between(-30000, 30000).integer());
+            treeB.add(list.get(i));
+        }
+        black.consume(tree);
+    }
+
+    @Benchmark
+    public void setUp9(Blackhole black) {
+        for (int i = 0; i < listSize; i++) {
+            // treeA.add(between(-30000, 30000).integer());
+            treeA.add(list.get(i));
         }
         black.consume(treeA);
+    }
+
+    @Benchmark
+    public void find5(Blackhole black) {
+        for (int i = 0; i < listSize; i++) {
+            // tree.add(between(-30000, 30000).integer());
+            tree.contains(list.get(i));
+        }
+        black.consume(tree);
+    }
+
+    @Benchmark
+    public void find9(Blackhole black) {
+        for (int i = 0; i < listSize; i++) {
+            treeA.contains(list.get(i));
+        }
+        black.consume(tree);
+    }
+
+    @Benchmark
+    public void findB(Blackhole black) {
+        for (int i = 0; i < listSize; i++) {
+            // tree.add(between(-30000, 30000).integer());
+            treeB.contains(list.get(i));
+        }
+        black.consume(tree);
     }
 }
